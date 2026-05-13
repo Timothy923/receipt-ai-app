@@ -1,65 +1,201 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
 
 export default function Home() {
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    merchant_name: "",
+    date: "",
+    total_amount: "",
+    currency: "",
+  });
+
+  const handleUpload = async () => {
+    if (!file) {
+      alert("Please select a receipt image.");
+      return;
+    }
+
+    setLoading(true);
+
+    const reader = new FileReader();
+
+    reader.readAsDataURL(file);
+
+    reader.onload = async () => {
+      try {
+        const base64 = reader.result?.toString().split(",")[1];
+
+        const res = await fetch("/api/extract", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            image: base64,
+            mimeType: file.type,
+          }),
+        });
+
+        const data = await res.json();
+
+        console.log(data);
+
+        if (!data.result) {
+          alert(data.error || "Extraction failed");
+          setLoading(false);
+          return;
+        }
+
+        let cleaned = data.result.trim();
+
+        cleaned = cleaned.replace(/```json/g, "");
+        cleaned = cleaned.replace(/```/g, "");
+        cleaned = cleaned.trim();
+
+        const parsed = JSON.parse(cleaned);
+
+        setFormData(parsed);
+      } catch (error) {
+        console.error(error);
+        alert("Extraction failed.");
+      }
+
+      setLoading(false);
+    };
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "20px",
+      }}
+    >
+      <div
+        style={{
+          background: "white",
+          padding: "30px",
+          borderRadius: "12px",
+          width: "100%",
+          maxWidth: "500px",
+          boxShadow: "0 0 10px rgba(0,0,0,0.1)",
+        }}
+      >
+        <h1
+          style={{
+            fontSize: "28px",
+            fontWeight: "bold",
+            marginBottom: "20px",
+            color: "black",
+          }}
+        >
+          Receipt AI Extractor
+        </h1>
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            if (e.target.files?.[0]) {
+              setFile(e.target.files[0]);
+            }
+          }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <button
+          onClick={handleUpload}
+          style={{
+            width: "100%",
+            marginTop: "20px",
+            padding: "12px",
+            backgroundColor: "black",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+          }}
+        >
+          {loading ? "Extracting..." : "Extract Receipt"}
+        </button>
+
+        <div style={{ marginTop: "20px" }}>
+          <input
+            placeholder="Merchant Name"
+            value={formData.merchant_name}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                merchant_name: e.target.value,
+              })
+            }
+            style={inputStyle}
+          />
+
+          <input
+            placeholder="Date"
+            value={formData.date}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                date: e.target.value,
+              })
+            }
+            style={inputStyle}
+          />
+
+          <input
+            placeholder="Total Amount"
+            value={formData.total_amount}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                total_amount: e.target.value,
+              })
+            }
+            style={inputStyle}
+          />
+
+          <input
+            placeholder="Currency"
+            value={formData.currency}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                currency: e.target.value,
+              })
+            }
+            style={inputStyle}
+          />
+
+          <button
+            onClick={() => {
+            localStorage.setItem(
+              "receiptData",
+              JSON.stringify(formData)
+            );
+
+            alert("Receipt data saved!");
+          }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Submit
+          </button>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px",
+  marginBottom: "10px",
+  border: "1px solid #ccc",
+  borderRadius: "6px",
+};
