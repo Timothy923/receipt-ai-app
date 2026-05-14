@@ -96,8 +96,17 @@ export default function Home() {
             color: "black",
           }}
         >
-          AI Receipt Auto-Fill System
+          AI-Powered Receipt Auto-Fill System
         </h1>
+
+        <p
+          style={{
+            marginBottom: "20px",
+            color: "#555",
+          }}
+        >
+          Upload a receipt image to automatically extract and review receipt details.
+        </p>
 
         <input
           type="file"
@@ -181,7 +190,7 @@ export default function Home() {
               JSON.stringify(formData)
             );
 
-            alert("Receipt data saved!");
+            alert("Receipt data saved successfully!");
           }}
           >
             Submit
