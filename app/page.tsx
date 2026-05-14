@@ -96,7 +96,7 @@ export default function Home() {
             color: "black",
           }}
         >
-          Receipt AI Extractor
+          AI Receipt Auto-Fill System
         </h1>
 
         <input
